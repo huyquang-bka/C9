@@ -1,0 +1,7 @@
+venv
+__pycache__
+.idea
+.DS_Store
+resources/Process
+resources/Txt
+resources/Weights
