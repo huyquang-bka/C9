@@ -7,7 +7,6 @@ from ..yolov5_module.utils.general import (
 from ..yolov5_module.utils.augmentations import letterbox
 import numpy as np
 import cv2
-from .sort import Sort
 
 
 class Detection:
@@ -65,69 +64,3 @@ class Detection:
 
         return bboxes
 
-
-class Tracking(Detection):
-    def __init__(self, max_age=70, min_hits=3, iou_threshold=0.3):
-        super().__init__()
-        self._tracker = Sort(max_age=max_age, min_hits=min_hits,iou_threshold=iou_threshold)
-
-    def track(self, image):
-        track_dict = {}
-        bboxes = self.detect(image)
-        dets_to_sort = np.empty((0, 6))
-        for x1, y1, x2, y2, cls, conf in bboxes:
-            dets_to_sort = np.vstack(
-                (dets_to_sort, np.array([x1, y1, x2, y2, conf, cls])))
-
-        tracked_det = self._tracker.update(dets_to_sort)
-        if len(tracked_det) > 0:
-            bbox_xyxy = tracked_det[:, :4]
-            indentities = tracked_det[:, 8]
-            categories = tracked_det[:, 4]
-            for i in range(len(bbox_xyxy)):
-                x1, y1, x2, y2 = list(
-                    map(lambda x: max(0, int(x)), bbox_xyxy[i]))
-                id = int(indentities[i])
-                track_dict[id] = [x1, y1, x2, y2, categories[i]]
-        return track_dict
-
-
-if __name__ == "__main__":
-    tracker = Tracking()
-
-    tracker.weights = r"resources/Weight/face_v3.pt"
-    tracker.imgsz = 320
-    tracker.device = "cpu"
-    tracker.conf_thres = 0.25
-    tracker.classes = [1]
-    tracker.agnostic_nms = True
-    tracker.half = False
-    tracker._load_model()
-
-    # path = "rtsp://admin:Atin%402022@192.168.1.233/profile1/media.smp"
-    path = 0
-    cap = cv2.VideoCapture(path)
-    count = 0
-    old_time = 0
-    while True:
-        if time.time() - old_time > 1:
-            print(count)
-            count = 0
-            old_time = time.time()
-        ret, image = cap.read()
-        if not ret:
-            break
-        count += 1
-        t = time.time()
-        id_dict = tracker.track(image)
-        for id, bbox in id_dict.items():
-            x1, y1, x2, y2, cls = bbox
-            cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(image, str(id), (x1, y1), cv2.FONT_HERSHEY_SIMPLEX,
-                        1, (0, 0, 255), 2)
-            print("Tracking id: ", id)
-        image = cv2.resize(image, (640, 480))
-        cv2.imshow("image", image)
-        key = cv2.waitKey(1)
-        if key == ord("q"):
-            break

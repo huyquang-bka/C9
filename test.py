@@ -1,11 +1,15 @@
-import shutil
 import requests
+import time
 
-#zip a folder 
-folder = "Output"
-shutil.make_archive(folder, 'zip', folder)
+url = "http://202.191.56.104:5518/sendFile"
+# url = "http://192.168.1.13:5518/sendFile"
 
-with open("Output.zip", "rb") as f:
-    data = f.read()
-    res = requests.post("http://192.168.1.106:5000/sendFile", files={"file": data})
-    print(res.text)
+for i in range(100):
+    with open("main/C9_result.txt", "rb") as f:
+        data = f.read()
+        res = requests.post("http://202.191.56.104:5518/sendFile", files={"file": data})
+        text = res.text
+        print(text)
+        if text == "Success":
+            time.sleep(5)
+    
